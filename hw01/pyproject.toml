@@ -1,0 +1,31 @@
+# pyproject.toml.jinja
+
+[project]
+name = "hw01"
+version = "0.1.0"
+description = " linear regression of a noisy sine wave using a set of Gaussian basis functions."
+readme = "README.md"
+authors = [
+    { name = "Yunwen Zhu", email = "yunwen.zhu@cooper.edu" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "structlog",
+    "numpy",
+    "pydantic-settings>=2.10.1",
+    "matplotlib>=3.10.5",
+    "tqdm>=4.67.1",
+    "jax[cpu]>=0.7.1",
+    "flax>=0.11.2",
+    "optax>=0.2.4",
+]
+
+[project.scripts]
+hw01 = "hw01:main"
+
+[build-system]
+requires = ["uv_build>=0.8.3,<0.9.0"]
+build-backend = "uv_build"
+
+[tool.setuptools.package-data]
+"hw01" = ["config.toml"]

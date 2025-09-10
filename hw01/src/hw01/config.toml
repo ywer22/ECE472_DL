@@ -1,0 +1,18 @@
+debug = false
+random_seed = 0xc61dd8fc
+
+[data]
+num_features = 1
+num_basis_ftn = 6       #M
+num_samples = 50        #N
+sigma_noise = 0.1
+
+[training]
+batch_size = 16
+num_iters = 300
+learning_rate = 0.1
+
+[plotting]
+output_dir = "artifacts"
+figsize = [5, 3]
+dpi = 200
