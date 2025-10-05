@@ -46,9 +46,9 @@ def plot_fit(
 
     xs = np.linspace(0, 1, 100)
     xs = xs[:, np.newaxis]
-    ax.plot(
-        xs, np.squeeze(model(jnp.asarray(xs))), "-", np.squeeze(data.x), data.y, "o"
-    )
+    ax.plot(xs, np.squeeze(model(jnp.asarray(xs))), "-", label="Estimated function")
+    ax.plot(np.squeeze(data.x), data.y, "o")
+    ax.plot(xs, np.sin(2 * np.pi * xs), "--", label="Sine wave")
 
     plt.tight_layout()
 
