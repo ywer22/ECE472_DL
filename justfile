@@ -37,3 +37,14 @@ export path:
       git add . && \
       git commit -m "Initial commit" > /dev/null)
     @echo "--> Successfully created a clean repository in '{{path}}'."
+
+# Generates a PDF of all source and config files for a homework.
+#
+# Usage:
+#   just pdf hw02
+pdf hw_name:
+    @echo "==> Generating PDF for '{{hw_name}}'..."
+    @find {{hw_name}} \( -path '*/.venv' -o -path '*/__pycache__' -o -name '*~' \) -prune -o \( -name "*.py" -o -name "*.toml" \) | xargs a2ps -2 --media=letter -o {{hw_name}}.ps
+    @gs -sDEVICE=pdfwrite -sPAPERSIZE=letter -dPDFFitPage -sOutputFile={{hw_name}}.pdf -dNOPAUSE -dBATCH {{hw_name}}.ps `find {{hw_name}} \\( -path '*/.venv' -o -path '*/__pycache__' -o -name '*~' \\) -prune -o -name "*.pdf" -print` > /dev/null 2>&1
+    @rm {{hw_name}}.ps
+    @echo "==> PDF generated at '{{hw_name}}.pdf'"
