@@ -1,0 +1,27 @@
+import jax
+
+# import numpy as np
+# import optax
+# from flax import nnx
+import structlog
+
+from .data import Data as Data
+
+# from .model import
+from .config import load_settings
+
+# from .training import
+from .logging import configure_logging
+
+
+def main() -> None:
+    """CLI entry point."""
+    settings = load_settings()
+    configure_logging()
+    log = structlog.get_logger()
+    log.info("Settings loaded", settings=settings.model_dump())
+
+    # JAX PRNG
+    key = jax.random.PRNGKey(settings.random_seed)
+    data_key, model_key = jax.random.split(key)
+    # np_rng = np.random.default_rng(np.array(data_key))
