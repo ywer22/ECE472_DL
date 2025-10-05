@@ -1,0 +1,23 @@
+debug = false
+random_seed = 0xc61dd8fc
+
+[data]
+num_features = 2
+num_samples = 500
+sigma_noise = 0.08
+
+[model]
+input_dim = 2
+output_dim = 1
+hidden_layer_width = 256
+num_hidden_layers = 5
+
+[training]
+batch_size = 256
+num_iters = 900
+learning_rate = 0.001
+
+[plotting]
+output_dir = "artifacts"
+figsize = [5, 5]
+dpi = 200
