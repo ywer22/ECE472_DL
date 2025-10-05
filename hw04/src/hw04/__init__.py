@@ -6,7 +6,7 @@ import numpy as np
 # from flax import nnx
 import structlog
 
-from .data import Data as Data
+from .data import Data_CIFAR10, Data_CIFAR100
 
 # from .model import
 from .config import load_settings
@@ -27,10 +27,18 @@ def main() -> None:
     data_key, model_key = jax.random.split(key)
     np_rng = np.random.default_rng(np.array(data_key))
 
-    data = Data(
+    data = Data_CIFAR10(
         model=None,
         rng=np_rng,
         batch_size=int(settings.data.batch_size),
         val_split=float(settings.data.val_split),
     )
     log.debug("Generating CIFAR-10 data points", model=data)
+
+    data2 = Data_CIFAR100(
+        model=None,
+        rng=np_rng,
+        batch_size=int(settings.data.batch_size),
+        val_split=float(settings.data.val_split),
+    )
+    log.debug("Generating CIFAR-100 data points", model=data2)
