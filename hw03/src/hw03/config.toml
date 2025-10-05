@@ -1,0 +1,19 @@
+debug = false
+random_seed = 0xc61dd8fc
+
+[data]
+batch_size = 128
+val_split = 0.1
+
+[model]
+input_depth = 1
+layer_depths = [32, 64]
+layer_kernel_sizes = [[3, 3], [3, 3]]
+num_classes = 10
+dropout = 0.5
+l2_reg = 1e-4
+
+[training]
+batch_size = 128
+num_iters = 500
+learning_rate = 0.001
