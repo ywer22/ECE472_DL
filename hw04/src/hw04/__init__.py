@@ -1,6 +1,7 @@
 import jax
 
-# import numpy as np
+import numpy as np
+
 # import optax
 # from flax import nnx
 import structlog
@@ -24,4 +25,12 @@ def main() -> None:
     # JAX PRNG
     key = jax.random.PRNGKey(settings.random_seed)
     data_key, model_key = jax.random.split(key)
-    # np_rng = np.random.default_rng(np.array(data_key))
+    np_rng = np.random.default_rng(np.array(data_key))
+
+    data = Data(
+        model=None,
+        rng=np_rng,
+        batch_size=int(settings.data.batch_size),
+        val_split=float(settings.data.val_split),
+    )
+    log.debug("Generating CIFAR-10 data points", model=data)

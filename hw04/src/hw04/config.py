@@ -12,6 +12,9 @@ from pydantic_settings import (
 class DataSettings(BaseModel):
     """Settings for data generation."""
 
+    batch_size: int = 16
+    val_split: float = 0.2
+
 
 class TrainingSettings(BaseModel):
     """Settings for model training."""
@@ -30,7 +33,7 @@ class AppSettings(BaseSettings):
     training: TrainingSettings = TrainingSettings()
 
     model_config = SettingsConfigDict(
-        toml_file=files("example").joinpath("config.toml"),
+        toml_file=files("hw04").joinpath("config.toml"),
         env_nested_delimiter="__",
     )
 

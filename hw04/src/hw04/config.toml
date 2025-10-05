@@ -1,2 +1,6 @@
 debug = false
 random_seed = 0xc61dd8fc
+
+[data]
+batch_size = 16
+val_split = 0.2
