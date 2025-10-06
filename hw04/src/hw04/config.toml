@@ -1,6 +1,10 @@
 debug = false
 random_seed = 0xc61dd8fc
 
+script = "hw04:final_test"
+
 [data]
 batch_size = 16
 val_split = 0.2
+
+[model]

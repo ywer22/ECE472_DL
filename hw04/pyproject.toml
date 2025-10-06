@@ -19,6 +19,7 @@ dependencies = [
     "flax>=0.11.2",
     "optax>=0.2.4",
     "tensorflow",
+    "dm_pix",
 ]
 
 [project.scripts]

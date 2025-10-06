@@ -48,3 +48,9 @@ pdf hw_name:
     @gs -sDEVICE=pdfwrite -sPAPERSIZE=letter -dPDFFitPage -sOutputFile={{hw_name}}.pdf -dNOPAUSE -dBATCH {{hw_name}}.ps `find {{hw_name}} \\( -path '*/.venv' -o -path '*/__pycache__' -o -name '*~' \\) -prune -o -name "*.pdf" -print` > /dev/null 2>&1
     @rm {{hw_name}}.ps
     @echo "==> PDF generated at '{{hw_name}}.pdf'"
+
+
+# Run test script on choosen homework
+test hw_name script:
+    @echo "==> Running test script on '{{hw_name}}'"
+    @uv run --project {{hw_name}} {{script}}
