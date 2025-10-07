@@ -51,6 +51,6 @@ pdf hw_name:
 
 
 # Run test script on choosen homework
-test hw_name script:
+test hw_name test:
     @echo "==> Running test script on '{{hw_name}}'"
-    @uv run --project {{hw_name}} {{script}}
+    @uv run --project {{hw_name}} {{test}}
