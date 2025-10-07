@@ -131,7 +131,7 @@ def train(
 
         total_loss, ce_loss, l2_loss = train_step(model, optimizer, x, y)
 
-        if i % 100 == 0:
+        if i % 1 == 0:
             bar.set_description(
                 f"Loss @ {i} => Total: {total_loss:.4f}, CE: {ce_loss:.4f}, L2: {l2_loss:.4f}"
             )

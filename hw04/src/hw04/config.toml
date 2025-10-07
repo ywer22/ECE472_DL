@@ -9,5 +9,5 @@ val_split = 0.2
 
 [training]
 batch_size = 128
-num_iters = 50000
+num_iters = 62500
 learning_rate = 0.001
