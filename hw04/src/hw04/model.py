@@ -156,7 +156,7 @@ class GroupNorm(nnx.Module):
             num_groups=num_groups,
             num_features=num_features,
             epsilon=eps,
-            rngs=rngs,  # Fixed: added rngs parameter
+            rngs=rngs,
         )
 
     def __call__(self, x: jax.Array) -> jax.Array:
@@ -186,9 +186,7 @@ class ResidualBlock(nnx.Module):
         self.out_channels = planes * expansion
 
         # 1x1 reduce
-        self.gn1 = GroupNorm(
-            num_groups=num_groups, num_features=channels, rngs=rngs
-        )  # Fixed: added rngs
+        self.gn1 = GroupNorm(num_groups=num_groups, num_features=channels, rngs=rngs)
         self.prelu1 = nnx.PReLU()
         self.conv1 = Conv2d(
             in_features=channels,
@@ -201,8 +199,10 @@ class ResidualBlock(nnx.Module):
 
         # 3x3 downsampling
         self.gn2 = GroupNorm(
-            num_groups=num_groups, num_features=planes, rngs=rngs
-        )  # Fixed: added rngs
+            num_groups=num_groups,
+            num_features=planes,
+            rngs=rngs,
+        )
         self.prelu2 = nnx.PReLU()
         self.conv2 = Conv2d(
             in_features=planes,
@@ -215,9 +215,7 @@ class ResidualBlock(nnx.Module):
         )
 
         # 1x1 expand
-        self.gn3 = GroupNorm(
-            num_groups=num_groups, num_features=planes, rngs=rngs
-        )  # Fixed: added rngs
+        self.gn3 = GroupNorm(num_groups=num_groups, num_features=planes, rngs=rngs)
         self.prelu3 = nnx.PReLU()
         self.conv3 = Conv2d(
             in_features=planes,
@@ -311,6 +309,7 @@ class Classifier(nnx.Module):
             for j in range(num_blocks):
                 # First block in stage may downsample
                 block_stride = stride if j == 0 else 1
+
                 block = ResidualBlock(
                     planes=planes,
                     channels=current_channels,

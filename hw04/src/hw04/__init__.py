@@ -46,7 +46,6 @@ def main() -> None:
         test_samples=cifar10_data.x_test.shape[0],
     )
 
-    # Create models for datasets
     model_rngs = nnx.Rngs(params=model_key)
 
     # Model for CIFAR-10
