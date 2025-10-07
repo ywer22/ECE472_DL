@@ -71,6 +71,42 @@ def compute_accuracy(
     return accuracy
 
 
+def evaluate_model(
+    model: Classifier, data: Data_CIFAR, batch_size: int, dataset_type: str = "test"
+) -> float:
+    """Calculate classification accuracy on specified dataset."""
+    if dataset_type == "test":
+        x_np, y_np = data.get_test_data()
+    elif dataset_type == "val":
+        x_np, y_np = data.get_val_data()
+    else:
+        x_np, y_np = data.get_batch(np.random.default_rng(), batch_size)
+
+    total_correct = 0
+    total_samples = 0
+
+    for i in range(0, len(y_np), batch_size):
+        batch_end = min(i + batch_size, len(y_np))
+        x_batch = jnp.asarray(x_np[i:batch_end])
+        y_batch = jnp.asarray(y_np[i:batch_end])
+
+        logits = model(x_batch, training=False)
+        pred = jnp.argmax(logits, axis=1)
+        correct = jnp.sum(pred == y_batch)
+
+        total_correct += correct
+        total_samples += len(y_batch)
+
+    accuracy = float(total_correct) / total_samples
+    log.info(
+        f"{dataset_type.capitalize()} accuracy computed",
+        correct=total_correct,
+        total=total_samples,
+        accuracy=accuracy,
+    )
+    return accuracy
+
+
 def train(
     model: Classifier,
     optimizer: nnx.Optimizer,

@@ -155,7 +155,7 @@ class GroupNorm(nnx.Module):
 
 
 class ResidualBlock(nnx.Module):
-    """Residual block similar to identity mapping that uses pre-activation and also bottleneck from method of preceiver paper."""
+    """Residual block similar to identity mapping that uses pre-activation."""
 
     def __init__(
         self,

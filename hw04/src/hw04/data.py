@@ -64,7 +64,7 @@ class Data_CIFAR:
         rng: np.random.Generator,
         batch_size: int,
         training: bool = True,
-        aug_key: jnp.ndarray = None,  # Add augmentation key
+        aug_key: jnp.ndarray = None,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Select random subset of examples for training batch."""
         choices = rng.choice(self.index, size=batch_size)
@@ -75,7 +75,7 @@ class Data_CIFAR:
         # Apply data augmentation if provided
         if training and aug_key is not None and self.data_aug is not None:
             x_batch = self.data_aug(jnp.array(x_batch), key=aug_key, training=True)
-            x_batch = np.array(x_batch)  # Convert back to numpy for consistency
+            x_batch = np.array(x_batch)  # Convert back to numpy
 
         return x_batch, y_batch
 
