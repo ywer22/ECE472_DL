@@ -67,7 +67,7 @@ class Data_Augmentation(nnx.Module):
         x = self.upscaling_img(x, keys[0], scale_range=(1.1, 1.3))
         x = self.img_rotation(x, keys[1], rotation_angle=3.0)
         x = self.flip_img(x, keys[2])
-        x = self.gaussian_noise(x, keys[3], std=0.01)
+        x = self.gaussian_noise(x, keys[3], std=0.05)
 
         return x
 
@@ -130,7 +130,7 @@ class Data_Augmentation(nnx.Module):
         return jax.vmap(flip_single)(img, flip)
 
     def gaussian_noise(
-        self, x: jax.Array, key: jax.Array, std: float = 0.01
+        self, x: jax.Array, key: jax.Array, std: float = 0.05
     ) -> jax.Array:
         """Blur the image using dm_pix by apply gaussian noise."""
         B, H, W, C = x.shape

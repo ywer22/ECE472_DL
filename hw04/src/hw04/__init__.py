@@ -64,9 +64,14 @@ def main() -> None:
     sample_batch = jax.numpy.array(sample_batch)
     _ = model_cifar10(sample_batch, training=False)
 
+    schedule = optax.cosine_decay_schedule(
+        init_value=settings.training.learning_rate,
+        decay_steps=settings.training.num_iters,
+    )
+
     # Initialize optimizers
     optimizer_cifar10 = nnx.Optimizer(
-        model_cifar10, optax.adam(settings.training.learning_rate), wrt=nnx.Param
+        model_cifar10, optax.adam(schedule), wrt=nnx.Param
     )
     log.info("Optimizers initialized")
 
