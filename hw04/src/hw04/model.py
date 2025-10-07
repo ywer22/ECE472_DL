@@ -61,12 +61,13 @@ class Data_Augmentation(nnx.Module):
             return x
 
         # Split key for different augmentations
-        keys = jax.random.split(key, 3)
+        keys = jax.random.split(key, 4)
 
         # augmentation testing data
         x = self.upscaling_img(x, keys[0], scale_range=(1.1, 1.3))
         x = self.img_rotation(x, keys[1], rotation_angle=3.0)
         x = self.flip_img(x, keys[2])
+        x = self.gaussian_noise(x, keys[3], std=0.01)
 
         return x
 
@@ -127,6 +128,14 @@ class Data_Augmentation(nnx.Module):
             )
 
         return jax.vmap(flip_single)(img, flip)
+
+    def gaussian_noise(
+        self, x: jax.Array, key: jax.Array, std: float = 0.01
+    ) -> jax.Array:
+        """Blur the image using dm_pix by apply gaussian noise."""
+        B, H, W, C = x.shape
+        noise = jax.random.normal(key, (B, H, W, C)) * std
+        return jnp.clip(x + noise, 0.0, 1.0)
 
 
 class GroupNorm(nnx.Module):

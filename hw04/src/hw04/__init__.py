@@ -80,7 +80,7 @@ def main() -> None:
     )
 
     # Create checkpoint directory
-    ckpt_dir = Path("/tmp/my-checkpoints-5/")
+    ckpt_dir = Path("/tmp/my-checkpoints-4/")
     ckpt_dir.mkdir(exist_ok=True)
 
     # Split the model state
@@ -127,7 +127,7 @@ def test() -> None:
     # Model for CIFAR-10
     model_cifar10 = Classifier(
         num_classes=10,
-        base_planes=16,
+        base_planes=32,
         block_counts=(3, 4, 6, 3),
         num_groups=8,
         expansion=4,
@@ -140,7 +140,7 @@ def test() -> None:
     _ = model_cifar10(sample_batch, training=False)
 
     # Load checkpoint
-    ckpt_dir = Path("/tmp/my-checkpoints-5/")
+    ckpt_dir = Path("/tmp/my-checkpoints-4/")
     if (ckpt_dir / "state").exists():
         checkpointer = ocp.StandardCheckpointer()
 
