@@ -263,8 +263,8 @@ class Classifier(nnx.Module):
     def __init__(
         self,
         num_classes: int,
-        base_planes: int = 64,
-        block_counts: tuple = (3, 4, 6, 3),
+        base_planes: int = 32,
+        block_counts: tuple = (3, 8, 16, 3),
         num_groups: int = 8,
         expansion: int = 4,
         l2reg: float = 0.001,
@@ -280,7 +280,7 @@ class Classifier(nnx.Module):
 
         # Initial convolution
         self.conv1 = Conv2d(
-            in_features=3,  # CIFAR has 3 channels
+            in_features=3,  # 3 channels
             out_features=base_planes,
             kernel_size=(3, 3),
             strides=(1, 1),
@@ -319,7 +319,7 @@ class Classifier(nnx.Module):
         # Final layers
         self.gn_final = GroupNorm(
             num_groups=num_groups, num_features=current_channels, rngs=rngs
-        )  # Fixed: added rngs
+        )
         self.prelu_final = nnx.PReLU()
         self.dense = nnx.Linear(
             in_features=current_channels, out_features=num_classes, rngs=rngs

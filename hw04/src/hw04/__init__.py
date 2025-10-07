@@ -52,7 +52,7 @@ def main() -> None:
     # Model for CIFAR-10
     model_cifar10 = Classifier(
         num_classes=10,
-        base_planes=16,
+        base_planes=32,
         block_counts=(3, 4, 6, 3),
         num_groups=8,
         expansion=4,
