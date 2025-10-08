@@ -80,7 +80,7 @@ class Data_Augmentation(nnx.Module):
             start_h = jax.random.randint(crop_key, (), 0, 2 * pad + 1)
             start_w = jax.random.randint(crop_key, (), 0, 2 * pad + 1)
 
-            cropped = padded[start_h : start_h + H, start_w : start_w + W, :]
+            cropped = jax.lax.dynamic_slice(padded, (start_h, start_w, 0), (H, W, C))
             return cropped
 
         # Split key for each image's crop
