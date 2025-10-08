@@ -28,7 +28,7 @@ def main() -> None:
     # Data Augmentation
     data_aug = Data_Augmentation()
 
-    # Create datasets
+    # Create datasets, bool true to use CIFAR10
     cifar10_data = Data_CIFAR(
         model=None,
         rng=np_rng,
@@ -41,9 +41,6 @@ def main() -> None:
 
     log.info(
         "CIFAR-10 dataset loaded",
-        train_samples=cifar10_data.x_train.shape[0],
-        val_samples=cifar10_data.x_val.shape[0],
-        test_samples=cifar10_data.x_test.shape[0],
     )
 
     model_rngs = nnx.Rngs(params=model_key)
@@ -51,17 +48,14 @@ def main() -> None:
     # Model for CIFAR-10
     model_cifar10 = Classifier(
         num_classes=10,
-        base_planes=32,
-        block_counts=(3, 4, 6, 3),
-        num_groups=8,
-        expansion=4,
+        base_planes=settings.model.base_planes,
+        block_counts=tuple(settings.model.block_counts),
+        num_groups=settings.model.num_groups,
+        l2reg=settings.model.l2reg,
+        kernel_size=tuple(settings.model.kernel_size),
+        strides=settings.model.strides,
         rngs=model_rngs,
     )
-
-    # Initialize models by calling them with sample data
-    sample_batch = cifar10_data.x_train[:2].astype(np.float32) / 255.0
-    sample_batch = jax.numpy.array(sample_batch)
-    _ = model_cifar10(sample_batch, training=False)
 
     schedule = optax.cosine_decay_schedule(
         init_value=settings.training.learning_rate,
@@ -70,7 +64,9 @@ def main() -> None:
 
     # Initialize optimizers
     optimizer_cifar10 = nnx.Optimizer(
-        model_cifar10, optax.adam(schedule), wrt=nnx.Param
+        model_cifar10,
+        optax.sgd(learning_rate=schedule, momentum=settings.training.momentum),
+        wrt=nnx.Param,
     )
     log.info("Optimizers initialized")
 
@@ -84,7 +80,7 @@ def main() -> None:
     )
 
     # Create checkpoint directory
-    ckpt_dir = Path("/tmp/my-checkpoints-4/")
+    ckpt_dir = Path("/tmp/my-checkpoints-6/")
     ckpt_dir.mkdir(exist_ok=True)
 
     # Split the model state
@@ -134,7 +130,6 @@ def test() -> None:
         base_planes=32,
         block_counts=(3, 4, 6, 3),
         num_groups=8,
-        expansion=4,
         rngs=model_rngs,
     )
 
@@ -144,7 +139,7 @@ def test() -> None:
     _ = model_cifar10(sample_batch, training=False)
 
     # Load checkpoint
-    ckpt_dir = Path("/tmp/my-checkpoints-4/")
+    ckpt_dir = Path("/tmp/my-checkpoints-6/")
     if (ckpt_dir / "state").exists():
         checkpointer = ocp.StandardCheckpointer()
 

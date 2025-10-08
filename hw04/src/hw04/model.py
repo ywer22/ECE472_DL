@@ -12,27 +12,23 @@ class Conv2d(nnx.Module):
 
     def __init__(
         self,
-        in_features: int,
-        out_features: int,
-        kernel_size: tuple[int, int] = (3, 3),
-        strides: tuple[int, int] = (1, 1),
+        in_features,
+        out_features,
+        kernel_size,
+        stride,
+        l2reg: float,
         padding: str = "SAME",
-        l2reg: float = 0.001,
         rngs: nnx.Rngs = None,
     ):
-        super().__init__()
-        self.in_features = in_features
-        self.out_features = out_features
-        self.kernel_size = kernel_size
-        self.strides = strides
-        self.padding = padding
         self.l2reg = l2reg
+        self.kernel_size = kernel_size
+        self.stride = stride
 
         self.conv = nnx.Conv(
             in_features=in_features,
             out_features=out_features,
             kernel_size=kernel_size,
-            strides=strides,
+            strides=(stride, stride),
             padding=padding,
             rngs=rngs,
         )
@@ -40,15 +36,12 @@ class Conv2d(nnx.Module):
     def __call__(self, x: jax.Array) -> jax.Array:
         return self.conv(x)
 
-    def l2_loss(self) -> jax.Array:
-        """Calculate L2 loss for this layer's weights."""
-        if self.l2reg == 0.0:
-            return jnp.array(0.0)
+    def l2_loss(self):
         return self.l2reg * jnp.sum(jnp.square(self.conv.kernel))
 
 
 class Data_Augmentation(nnx.Module):
-    """Data Augmentation layer in charge of upscaling, rotation, and contrast."""
+    """Data Augmentation layer in charge of upscaling, rotation, flip, and added noise."""
 
     def __init__(self):
         super().__init__()
@@ -65,7 +58,7 @@ class Data_Augmentation(nnx.Module):
 
         # augmentation testing data
         x = self.upscaling_img(x, keys[0], scale_range=(1.1, 1.3))
-        x = self.img_rotation(x, keys[1], rotation_angle=3.0)
+        x = self.img_rotation(x, keys[1], rotation_angle=5.0)
         x = self.flip_img(x, keys[2])
         x = self.gaussian_noise(x, keys[3], std=0.05)
 
@@ -148,7 +141,6 @@ class GroupNorm(nnx.Module):
         eps: float = 1e-5,
         rngs: nnx.Rngs = None,
     ):
-        super().__init__()
         self.num_groups = num_groups
         self.num_features = num_features
         self.eps = eps
@@ -168,71 +160,58 @@ class ResidualBlock(nnx.Module):
 
     def __init__(
         self,
-        planes: int,
-        channels: int,
+        in_channels: int,
+        out_channels: int,
         stride: int = 1,
         num_groups: int = 8,
-        expansion: int = 4,
         l2reg: float = 0.001,
+        kernel_size: tuple[int, int] = (3, 3),
         rngs: nnx.Rngs = None,
     ):
-        super().__init__()
-        self.planes = planes
-        self.channels = channels
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         self.stride = stride
         self.num_groups = num_groups
-        self.expansion = expansion
         self.l2reg = l2reg
-        self.out_channels = planes * expansion
+        self.kernel_size = kernel_size
 
-        # 1x1 reduce
-        self.gn1 = GroupNorm(num_groups=num_groups, num_features=channels, rngs=rngs)
+        # First convolution block BN -> Activation -> Conv
+        self.gn1 = GroupNorm(num_groups=num_groups, num_features=in_channels, rngs=rngs)
         self.prelu1 = nnx.PReLU()
         self.conv1 = Conv2d(
-            in_features=channels,
-            out_features=planes,
-            kernel_size=(1, 1),
-            strides=(1, 1),
+            in_features=in_channels,
+            out_features=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
             l2reg=l2reg,
+            padding="SAME",
             rngs=rngs,
         )
 
-        # 3x3 downsampling
+        # Second convolution block BN -> Activation -> Conv
         self.gn2 = GroupNorm(
             num_groups=num_groups,
-            num_features=planes,
+            num_features=out_channels,
             rngs=rngs,
         )
         self.prelu2 = nnx.PReLU()
         self.conv2 = Conv2d(
-            in_features=planes,
-            out_features=planes,
-            kernel_size=(3, 3),
-            strides=(stride, stride),
+            in_features=out_channels,
+            out_features=out_channels,
+            kernel_size=kernel_size,
+            stride=1,
             padding="SAME",
             l2reg=l2reg,
             rngs=rngs,
         )
 
-        # 1x1 expand
-        self.gn3 = GroupNorm(num_groups=num_groups, num_features=planes, rngs=rngs)
-        self.prelu3 = nnx.PReLU()
-        self.conv3 = Conv2d(
-            in_features=planes,
-            out_features=self.out_channels,
-            kernel_size=(1, 1),
-            strides=(1, 1),
-            l2reg=l2reg,
-            rngs=rngs,
-        )
-
-        # Shortcut connection
-        if stride != 1 or channels != self.out_channels:
+        # Shortcut connection, apply kernel size (1, 1) to add together
+        if stride != 1 or in_channels != self.out_channels:
             self.shortcut_conv = Conv2d(
-                in_features=channels,
-                out_features=self.out_channels,
+                in_features=in_channels,
+                out_features=out_channels,
                 kernel_size=(1, 1),
-                strides=(stride, stride),
+                stride=stride,
                 l2reg=l2reg,
                 rngs=rngs,
             )
@@ -242,20 +221,15 @@ class ResidualBlock(nnx.Module):
     def __call__(self, x: jax.Array) -> jax.Array:
         residual = x
 
-        # 1x1 reduce
+        # First Block
         out = self.gn1(x)
         out = self.prelu1(out)
         out = self.conv1(out)
 
-        # 3x3 downsampling
+        # Second block
         out = self.gn2(out)
         out = self.prelu2(out)
         out = self.conv2(out)
-
-        # 1x1 expand
-        out = self.gn3(out)
-        out = self.prelu3(out)
-        out = self.conv3(out)
 
         # Shortcut connection
         if self.shortcut_conv is not None:
@@ -271,37 +245,42 @@ class Classifier(nnx.Module):
         self,
         num_classes: int,
         base_planes: int = 32,
-        block_counts: tuple = (3, 8, 16, 3),
+        block_counts: tuple = (3, 4, 6, 3),
         num_groups: int = 8,
-        expansion: int = 4,
         l2reg: float = 0.001,
+        kernel_size: tuple[int, int] = (3, 3),
+        strides: list[int] = None,
         rngs: nnx.Rngs = None,
     ):
-        super().__init__()
         self.num_classes = num_classes
         self.base_planes = base_planes
         self.block_counts = block_counts
         self.num_groups = num_groups
-        self.expansion = expansion
+        self.kernel_size = kernel_size
         self.l2reg = l2reg
 
-        # Initial convolution
+        # strides for each stage
+        if strides is None:
+            strides = [1, 2, 2, 2]
+        self.strides = strides
+
+        # Initial convolution, 3 input channels
         self.conv1 = Conv2d(
-            in_features=3,  # 3 channels
+            in_features=3,
             out_features=base_planes,
-            kernel_size=(3, 3),
-            strides=(1, 1),
+            kernel_size=kernel_size,
+            stride=1,
             padding="SAME",
             l2reg=l2reg,
             rngs=rngs,
         )
 
-        # Residual stages
+        # Go through all the Residual layers
         self.stages = nnx.List()
+        # 32, 64, 128, 256
         planes_list = [base_planes, base_planes * 2, base_planes * 4, base_planes * 8]
-        strides = [1, 2, 2, 2]
-
         current_channels = base_planes
+
         for i, (planes, num_blocks, stride) in enumerate(
             zip(planes_list, block_counts, strides)
         ):
@@ -311,16 +290,16 @@ class Classifier(nnx.Module):
                 block_stride = stride if j == 0 else 1
 
                 block = ResidualBlock(
-                    planes=planes,
-                    channels=current_channels,
+                    in_channels=current_channels,
+                    out_channels=planes,
                     stride=block_stride,
                     num_groups=num_groups,
-                    expansion=expansion,
                     l2reg=l2reg,
+                    kernel_size=kernel_size,
                     rngs=rngs,
                 )
                 stage_blocks.append(block)
-                current_channels = block.out_channels
+                current_channels = planes
 
             self.stages.append(stage_blocks)
 
@@ -334,15 +313,12 @@ class Classifier(nnx.Module):
         )
 
     def __call__(self, x: jax.Array, training: bool = True) -> jax.Array:
-        # Initial convolution
         x = self.conv1(x)
 
-        # Residual stages
         for stage in self.stages:
             for block in stage:
                 x = block(x)
 
-        # Final layers
         x = self.gn_final(x)
         x = self.prelu_final(x)
 
@@ -365,7 +341,6 @@ class Classifier(nnx.Module):
             for block in stage:
                 total_loss += block.conv1.l2_loss()
                 total_loss += block.conv2.l2_loss()
-                total_loss += block.conv3.l2_loss()
                 if block.shortcut_conv is not None:
                     total_loss += block.shortcut_conv.l2_loss()
 

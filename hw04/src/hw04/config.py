@@ -16,12 +16,24 @@ class DataSettings(BaseModel):
     val_split: float = 0.2
 
 
+class ModelSettings(BaseModel):
+    """Settings for Model"""
+
+    kernel_size: tuple[int, int] = (3, 3)
+    strides: list[int] = [1, 2, 2, 2]
+    l2reg: float = 0.001
+    base_planes: int = 32
+    block_counts: tuple[int, ...] = (3, 4, 6, 3)
+    num_groups: int = 8
+
+
 class TrainingSettings(BaseModel):
     """Settings for model training."""
 
     batch_size: int = 128
     num_iters: int = 500
     learning_rate: float = 0.001
+    momentum: float = 0.9
 
 
 class AppSettings(BaseSettings):
@@ -30,6 +42,7 @@ class AppSettings(BaseSettings):
     debug: bool = False
     random_seed: int = 31415
     data: DataSettings = DataSettings()
+    model: ModelSettings = ModelSettings()
     training: TrainingSettings = TrainingSettings()
 
     model_config = SettingsConfigDict(

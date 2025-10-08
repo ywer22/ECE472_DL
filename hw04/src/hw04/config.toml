@@ -1,13 +1,20 @@
 debug = false
 random_seed = 0xc61dd8fc
 
-
-
 [data]
-batch_size = 128
+batch_size = 1
 val_split = 0.2
+
+[model]
+kernel_size = [3, 3]
+strides = [1, 2, 2, 2]
+l2reg = 0.001
+base_planes = 32
+block_counts = [3, 4, 6, 3]
+num_groups = 8
 
 [training]
 batch_size = 128
-num_iters = 1
+num_iters = 62500
 learning_rate = 0.001
+momentum = 0.9
