@@ -55,13 +55,12 @@ class Data_Augmentation(nnx.Module):
             return x
 
         # Split key for different augmentations
-        keys = jax.random.split(key, 4)
+        keys = jax.random.split(key, 3)
 
         # augmentation testing data
         x = self.random_pad_and_crop(x, keys[0])
-        x = self.img_rotation(x, keys[1], rotation_angle=3.0)
-        x = self.flip_img(x, keys[2])
-        x = self.gaussian_noise(x, keys[3], std=0.05)
+        x = self.flip_img(x, keys[1])
+        x = self.gaussian_noise(x, keys[2], std=0.05)
 
         return x
 
@@ -86,23 +85,6 @@ class Data_Augmentation(nnx.Module):
         # Split key for each image's crop
         crop_keys = jax.random.split(key, B)
         return jax.vmap(crop_single)(padded_img, crop_keys)
-
-    def img_rotation(
-        self, img: jax.Array, key: jax.Array, rotation_angle: float = 3.0
-    ) -> jax.Array:
-        """Rotation of image on training set."""
-        B, H, W, C = img.shape
-        rotation = jax.random.uniform(
-            key, (B,), minval=-rotation_angle, maxval=rotation_angle
-        )
-
-        # dm_pix.rotate(H, W, C), so vmap over batch
-        def rotate_single(img, angle):
-            return pix.rotate(
-                image=img, angle=jnp.deg2rad(angle), order=1, mode="reflect"
-            )
-
-        return jax.vmap(rotate_single)(img, rotation)
 
     def flip_img(self, img: jax.Array, key: jax.Array) -> jax.Array:
         """Random horizontal flip using dm_pix."""

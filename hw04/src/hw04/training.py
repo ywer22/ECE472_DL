@@ -27,12 +27,12 @@ def train_step(
         total_loss = ce_loss + l2_loss
         return total_loss, (logits, per_example, ce_loss, l2_loss)
 
-    (total_loss, (logits, per_example, ce_loss, l2_loss)), grads = nnx.value_and_grad(
+    (total_loss, (logits, ce_loss, l2_loss)), grads = nnx.value_and_grad(
         loss_fn, has_aux=True
     )(model)
 
     # Apply gradient clipping to prevent explosion
-    grads = jax.tree_util.tree_map(lambda g: jnp.clip(g, -1.0, 1.0), grads)
+    grads = jax.tree_util.tree_map(lambda g: jnp.clip(g, -5.0, 5.0), grads)
 
     optimizer.update(model, grads)
 
@@ -106,7 +106,6 @@ def train(
         else:
             x_np, y_np = data.get_batch(np_rng, settings.batch_size, training=True)
         x, y = jnp.asarray(x_np), jnp.asarray(y_np)
-        x = x.astype(jnp.float32) / 255.0
 
         # Training step
         total_loss, ce_loss, l2_loss, train_accuracy = train_step(

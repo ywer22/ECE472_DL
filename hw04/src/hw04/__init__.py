@@ -60,6 +60,9 @@ def main() -> None:
     sample_batch = cifar10_data.x_train[:2].astype(np.float32) / 255.0
     sample_batch = jax.numpy.array(sample_batch)
     _ = model_cifar10(sample_batch, training=False)
+    logits = model_cifar10(sample_batch, training=False)
+    print(f"Logits shape: {logits.shape}")
+    print(f"Logits range: {logits.min():.3f} to {logits.max():.3f}")
 
     schedule = optax.cosine_decay_schedule(
         init_value=settings.training.learning_rate,

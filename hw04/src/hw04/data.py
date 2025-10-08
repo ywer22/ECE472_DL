@@ -77,6 +77,8 @@ class Data_CIFAR:
             x_batch = self.data_aug(jnp.array(x_batch), key=aug_key, training=True)
             x_batch = np.array(x_batch)  # Convert back to numpy
 
+        print(f"Data range: {x_batch.min():.3f} to {x_batch.max():.3f}")
+        print(f"Data shape: {x_batch.shape}")
         return x_batch, y_batch
 
     def get_val_data(self) -> tuple[np.ndarray, np.ndarray]:
