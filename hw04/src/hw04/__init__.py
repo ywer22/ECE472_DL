@@ -59,8 +59,8 @@ def main() -> None:
 
     schedule = optax.cosine_decay_schedule(
         init_value=settings.training.learning_rate,
-        decay_steps=settings.training.num_iters * 10,  # decay was too fast for trainng
-        alpha=0.1,
+        decay_steps=settings.training.num_iters * 100,  # decay was too fast for trainng
+        alpha=0.01,
     )
 
     # Initialize optimizers
@@ -82,7 +82,7 @@ def main() -> None:
     )
 
     # Create checkpoint directory
-    ckpt_dir = Path("/tmp/my-checkpoints-cifar10-3/")
+    ckpt_dir = Path("/tmp/my-checkpoints-cifar10-5/")
     ckpt_dir.mkdir(exist_ok=True)
 
     # Split the model state
@@ -141,7 +141,7 @@ def test() -> None:
     _ = model_cifar10(sample_batch, training=False)
 
     # Load checkpoint
-    ckpt_dir = Path("/tmp/my-checkpoints-cifar10-3/")
+    ckpt_dir = Path("/tmp/my-checkpoints-cifar10-5/")
     if (ckpt_dir / "state").exists():
         checkpointer = ocp.StandardCheckpointer()
 

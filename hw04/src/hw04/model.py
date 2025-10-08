@@ -99,7 +99,7 @@ class Data_Augmentation(nnx.Module):
         # dm_pix.rotate(H, W, C), so vmap over batch
         def rotate_single(img, angle):
             return pix.rotate(
-                image=img, angle_radians=jnp.deg2rad(angle), interpolation="bilinear"
+                image=img, angle=jnp.deg2rad(angle), order=1, mode="reflect"
             )
 
         return jax.vmap(rotate_single)(img, rotation)
