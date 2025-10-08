@@ -87,20 +87,16 @@ def train(
     np_rng: np.random.Generator,
     aug_key: jnp.ndarray = None,
 ):
-    """Train the model with cosine decay learning rate scheduling."""
-    log.info("Starting training", **settings.model_dump())
-
-    # Create learning rate schedule
-    schedule = optax.cosine_decay_schedule(
-        init_value=settings.learning_rate,
-        decay_steps=settings.num_iters,
+    """Train the model with minimal logging for performance."""
+    log.info(
+        "Starting training",
+        iterations=settings.num_iters,
+        batch_size=settings.batch_size,
     )
 
     bar = trange(settings.num_iters)
 
     for i in bar:
-        current_lr = schedule(i)
-
         # Get training batch
         if aug_key is not None:
             current_aug_key, aug_key = jax.random.split(aug_key)
@@ -110,6 +106,7 @@ def train(
         else:
             x_np, y_np = data.get_batch(np_rng, settings.batch_size, training=True)
         x, y = jnp.asarray(x_np), jnp.asarray(y_np)
+        x = x.astype(jnp.float32) / 255.0
 
         # Training step
         total_loss, ce_loss, l2_loss, train_accuracy = train_step(
@@ -119,19 +116,16 @@ def train(
         # Update progress bar only
         bar.set_description(
             f"Loss: {total_loss:.3f} (CE: {ce_loss:.3f}, L2: {l2_loss:.3f}) | "
-            f"Acc: {train_accuracy:.3f} | LR: {current_lr:.5f}"
+            f"Acc: {train_accuracy:.3f}"
         )
 
     log.info("Training completed")
 
-    # Final evaluations only
     val_accuracy = evaluate_model(model, data, settings.batch_size, "val")
-    test_accuracy = evaluate_model(model, data, settings.batch_size, "test")
 
     log.info(
         "Final results",
         val_accuracy=val_accuracy,
-        test_accuracy=test_accuracy,
     )
 
-    return val_accuracy, test_accuracy
+    return val_accuracy

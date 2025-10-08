@@ -43,9 +43,8 @@ def main() -> None:
         "CIFAR-10 dataset loaded",
     )
 
-    model_rngs = nnx.Rngs(params=model_key)
-
     # Model for CIFAR-10
+    model_rngs = nnx.Rngs(params=model_key)
     model_cifar10 = Classifier(
         num_classes=10,
         base_planes=settings.model.base_planes,
@@ -56,6 +55,11 @@ def main() -> None:
         strides=settings.model.strides,
         rngs=model_rngs,
     )
+
+    # Initialize model param with sample batch (?)
+    sample_batch = cifar10_data.x_train[:2].astype(np.float32) / 255.0
+    sample_batch = jax.numpy.array(sample_batch)
+    _ = model_cifar10(sample_batch, training=False)
 
     schedule = optax.cosine_decay_schedule(
         init_value=settings.training.learning_rate,
@@ -82,13 +86,11 @@ def main() -> None:
     )
 
     # Create checkpoint directory
-    ckpt_dir = Path("/tmp/my-checkpoints-cifar10-5/")
+    ckpt_dir = Path("/tmp/my-checkpoints-cifar10-2/")
     ckpt_dir.mkdir(exist_ok=True)
 
-    # Split the model state
+    # Split and Save checkpoint
     dynamic_context, state = nnx.split(model_cifar10)
-
-    # Save checkpoint
     checkpointer = ocp.StandardCheckpointer()
     checkpointer.save(ckpt_dir / "state", state)
     checkpointer.wait_until_finished()
@@ -116,42 +118,31 @@ def test() -> None:
         val_split=float(settings.data.val_split),
         use_CIFAR10=True,
     )
-    log.info(
-        "CIFAR-10 dataset loaded",
-        train_samples=cifar10_data.x_train.shape[0],
-        val_samples=cifar10_data.x_val.shape[0],
-        test_samples=cifar10_data.x_test.shape[0],
-    )
 
-    # Create models for both datasets
+    # Create models
     model_rngs = nnx.Rngs(params=model_key)
-
-    # Model for CIFAR-10
     model_cifar10 = Classifier(
         num_classes=10,
-        base_planes=32,
-        block_counts=(3, 4, 6, 3),
-        num_groups=8,
+        base_planes=settings.model.base_planes,
+        block_counts=tuple(settings.model.block_counts),
+        num_groups=settings.model.num_groups,
+        l2reg=settings.model.l2reg,
+        kernel_size=tuple(settings.model.kernel_size),
+        strides=settings.model.strides,
         rngs=model_rngs,
     )
 
-    # Initialize model
+    # Initialize model params (??)
     sample_batch = cifar10_data.x_test[:2].astype(np.float32) / 255.0
     sample_batch = jax.numpy.array(sample_batch)
     _ = model_cifar10(sample_batch, training=False)
 
     # Load checkpoint
-    ckpt_dir = Path("/tmp/my-checkpoints-cifar10-5/")
+    ckpt_dir = Path("/tmp/my-checkpoints-cifar10-2/")
     if (ckpt_dir / "state").exists():
         checkpointer = ocp.StandardCheckpointer()
-
-        # Split current model state
         dynamic_context, state = nnx.split(model_cifar10)
-
-        # Restore trained weights
         restored_state = checkpointer.restore(ckpt_dir / "state", state)
-
-        # Merge restored state back into model
         model_cifar10 = nnx.merge(dynamic_context, restored_state)
         log.info("Checkpoint loaded", directory=str(ckpt_dir))
 
