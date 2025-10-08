@@ -86,7 +86,7 @@ def main() -> None:
     )
 
     # Create checkpoint directory
-    ckpt_dir = Path("/tmp/my-checkpoints-cifar10-2/")
+    ckpt_dir = Path("/tmp/my-checkpoints-cifar10-6/")
     ckpt_dir.mkdir(exist_ok=True)
 
     # Split and Save checkpoint
@@ -138,7 +138,7 @@ def test() -> None:
     _ = model_cifar10(sample_batch, training=False)
 
     # Load checkpoint
-    ckpt_dir = Path("/tmp/my-checkpoints-cifar10-2/")
+    ckpt_dir = Path("/tmp/my-checkpoints-cifar10-6/")
     if (ckpt_dir / "state").exists():
         checkpointer = ocp.StandardCheckpointer()
         dynamic_context, state = nnx.split(model_cifar10)
