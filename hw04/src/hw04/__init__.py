@@ -26,7 +26,7 @@ def main() -> None:
     np_rng = np.random.default_rng(np.array(data_key))
 
     # Data Augmentation
-    data_aug = Data_Augmentation()
+    data_aug = Data_Augmentation(pad_size=4)
 
     # Create datasets, bool true to use CIFAR10
     cifar10_data = Data_CIFAR(

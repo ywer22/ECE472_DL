@@ -43,8 +43,9 @@ class Conv2d(nnx.Module):
 class Data_Augmentation(nnx.Module):
     """Data Augmentation layer in charge of upscaling, rotation, flip, and added noise."""
 
-    def __init__(self):
+    def __init__(self, pad_size: int = 4):
         super().__init__()
+        self.pad_size = pad_size
 
     def __call__(
         self, x: jax.Array, key: jax.Array, training: bool = True
@@ -57,47 +58,34 @@ class Data_Augmentation(nnx.Module):
         keys = jax.random.split(key, 4)
 
         # augmentation testing data
-        x = self.upscaling_img(x, keys[0], scale_range=(1.1, 1.3))
+        x = self.random_pad_and_crop(x, keys[0])
         x = self.img_rotation(x, keys[1], rotation_angle=5.0)
         x = self.flip_img(x, keys[2])
         x = self.gaussian_noise(x, keys[3], std=0.05)
 
         return x
 
-    def upscaling_img(
-        self,
-        img: jax.Array,
-        key: jax.Array,
-        scale_range: tuple[float, float] = (1.1, 1.3),
-    ) -> jax.Array:
-        """Upscaling image using dm_pix zoom function."""
+    def random_pad_and_crop(self, img: jax.Array, key: jax.Array) -> jax.Array:
+        """Random padding and cropping as shown in PDF."""
         B, H, W, C = img.shape
+        pad = self.pad_size
 
-        # Generate random scales for each image in batch
-        scales = jax.random.uniform(
-            key, (B,), minval=scale_range[0], maxval=scale_range[1]
+        # Pad the image
+        padded_img = jnp.pad(
+            img, [(0, 0), (pad, pad), (pad, pad), (0, 0)], mode="reflect"
         )
 
-        def zoom_and_crop_single(image, scale, crop_key):
-            # Calculate new dimensions
-            new_H = jnp.round(H * scale).astype(jnp.int32)
-            new_W = jnp.round(W * scale).astype(jnp.int32)
+        def crop_single(padded, crop_key):
+            # Random crop position
+            start_h = jax.random.randint(crop_key, (), 0, 2 * pad + 1)
+            start_w = jax.random.randint(crop_key, (), 0, 2 * pad + 1)
 
-            # Use dm_pix zoom for resizing
-            zoomed = pix.zoom(
-                image, (new_H / H, new_W / W, 1.0), interpolation="linear"
-            )
-
-            # Random crop back to original size
-            start_h = jax.random.randint(crop_key, (), 0, new_H - H + 1)
-            start_w = jax.random.randint(crop_key, (), 0, new_W - W + 1)
-
-            cropped = zoomed[start_h : start_h + H, start_w : start_w + W, :]
+            cropped = padded[start_h : start_h + H, start_w : start_w + W, :]
             return cropped
 
         # Split key for each image's crop
         crop_keys = jax.random.split(key, B)
-        return jax.vmap(zoom_and_crop_single)(img, scales, crop_keys)
+        return jax.vmap(crop_single)(padded_img, crop_keys)
 
     def img_rotation(
         self, img: jax.Array, key: jax.Array, rotation_angle: float = 3.0
