@@ -15,6 +15,6 @@ num_groups = 8
 
 [training]
 batch_size = 128
-num_iters = 5000
+num_iters = 62500
 learning_rate = 0.001
 momentum = 0.9

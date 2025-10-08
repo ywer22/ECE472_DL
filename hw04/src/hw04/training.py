@@ -51,8 +51,6 @@ def evaluate_model(
         x_np, y_np = data.get_test_data()
     elif dataset_type == "val":
         x_np, y_np = data.get_val_data()
-    elif dataset_type == "train":
-        x_np, y_np = data.x_train.astype(np.float32) / 255.0, data.y_train.flatten()
     else:
         raise ValueError(f"Unknown dataset_type: {dataset_type}")
 
@@ -81,44 +79,6 @@ def evaluate_model(
     return accuracy
 
 
-def debug_l2_components(model):
-    """Debug function to check L2 components"""
-    total = 0.0
-    print("=== L2 Components Debug ===")
-
-    # Check conv1
-    if hasattr(model, "conv1"):
-        k = model.conv1.conv.kernel
-        l2_val = jnp.sum(jnp.square(k)) * model.conv1.l2reg
-        total += l2_val
-        print(f"conv1: {float(l2_val):.6f}")
-
-    # Check stages
-    stage_total = 0.0
-    for si, stage in enumerate(model.stages):
-        for bi, block in enumerate(stage):
-            # conv1
-            k1 = block.conv1.conv.kernel
-            l2_1 = jnp.sum(jnp.square(k1)) * block.conv1.l2reg
-            stage_total += l2_1
-
-            # conv2
-            k2 = block.conv2.conv.kernel
-            l2_2 = jnp.sum(jnp.square(k2)) * block.conv2.l2reg
-            stage_total += l2_2
-
-            # shortcut
-            if block.shortcut_conv is not None:
-                k3 = block.shortcut_conv.conv.kernel
-                l2_3 = jnp.sum(jnp.square(k3)) * block.shortcut_conv.l2reg
-                stage_total += l2_3
-
-    total += stage_total
-    print(f"stages: {float(stage_total):.6f}")
-    print(f"TOTAL L2: {float(total):.6f}")
-    return total
-
-
 def train(
     model: Classifier,
     optimizer: nnx.Optimizer,
@@ -127,7 +87,7 @@ def train(
     np_rng: np.random.Generator,
     aug_key: jnp.ndarray = None,
 ):
-    """Train the model with enhanced monitoring and learning rate scheduling."""
+    """Train the model with cosine decay learning rate scheduling."""
     log.info("Starting training", **settings.model_dump())
 
     # Create learning rate schedule
@@ -136,11 +96,6 @@ def train(
         decay_steps=settings.num_iters,
     )
 
-    initial_l2 = debug_l2_components(model)
-    log.info("Initial L2 loss", l2_loss=float(initial_l2))
-
-    # Track best validation accuracy for early stopping insight
-    best_val_accuracy = 0.0
     bar = trange(settings.num_iters)
 
     for i in bar:
@@ -161,25 +116,7 @@ def train(
             model, optimizer, x, y
         )
 
-        # Comprehensive logging every 100 steps
-        if i % 100 == 0:
-            log.info(
-                "Training progress",
-                iteration=i,
-                learning_rate=float(current_lr),
-                total_loss=float(total_loss),
-                ce_loss=float(ce_loss),
-                l2_loss=float(l2_loss),
-                train_accuracy=float(train_accuracy),
-            )
-
-            # Periodic validation check
-            if i % 500 == 0:
-                val_accuracy = evaluate_model(model, data, settings.batch_size, "val")
-                if val_accuracy > best_val_accuracy:
-                    best_val_accuracy = val_accuracy
-
-        # Update progress bar with key metrics
+        # Update progress bar only
         bar.set_description(
             f"Loss: {total_loss:.3f} (CE: {ce_loss:.3f}, L2: {l2_loss:.3f}) | "
             f"Acc: {train_accuracy:.3f} | LR: {current_lr:.5f}"
@@ -187,15 +124,14 @@ def train(
 
     log.info("Training completed")
 
-    # Final evaluations
+    # Final evaluations only
     val_accuracy = evaluate_model(model, data, settings.batch_size, "val")
     test_accuracy = evaluate_model(model, data, settings.batch_size, "test")
 
     log.info(
         "Final results",
-        best_val_accuracy=best_val_accuracy,
-        final_val_accuracy=val_accuracy,
+        val_accuracy=val_accuracy,
         test_accuracy=test_accuracy,
     )
 
-    return best_val_accuracy, test_accuracy
+    return val_accuracy, test_accuracy

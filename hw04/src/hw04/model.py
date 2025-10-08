@@ -59,7 +59,7 @@ class Data_Augmentation(nnx.Module):
 
         # augmentation testing data
         x = self.random_pad_and_crop(x, keys[0])
-        x = self.img_rotation(x, keys[1], rotation_angle=5.0)
+        x = self.img_rotation(x, keys[1], rotation_angle=3.0)
         x = self.flip_img(x, keys[2])
         x = self.gaussian_noise(x, keys[3], std=0.05)
 
