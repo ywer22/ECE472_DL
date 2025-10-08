@@ -77,6 +77,7 @@ def main() -> None:
         data=cifar10_data,
         settings=settings.training,
         np_rng=np_rng,
+        aug_key=aug_key,
     )
 
     # Create checkpoint directory

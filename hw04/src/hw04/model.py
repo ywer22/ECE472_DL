@@ -37,7 +37,7 @@ class Conv2d(nnx.Module):
         return self.conv(x)
 
     def l2_loss(self):
-        return self.l2reg * jnp.sum(jnp.square(self.conv.kernel))
+        return self.l2reg * jnp.mean(jnp.square(self.conv.kernel))
 
 
 class Data_Augmentation(nnx.Module):
@@ -332,16 +332,21 @@ class Classifier(nnx.Module):
     def l2_loss(self) -> jax.Array:
         """Calculate total L2 loss for all Conv2d layers in the model."""
         total_loss = jnp.array(0.0)
+        num_layers = 0
 
-        # Initial convolution
+        # Initial conv
         total_loss += self.conv1.l2_loss()
+        num_layers += 1
 
-        # Residual blocks' convolutions
+        # Residual blocks conv
         for stage in self.stages:
             for block in stage:
                 total_loss += block.conv1.l2_loss()
                 total_loss += block.conv2.l2_loss()
+                num_layers += 2
                 if block.shortcut_conv is not None:
                     total_loss += block.shortcut_conv.l2_loss()
+                    num_layers += 1
 
-        return total_loss
+        # Average across layers to prevent scaling issues
+        return total_loss / max(1, num_layers)
