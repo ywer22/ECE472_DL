@@ -81,6 +81,44 @@ def evaluate_model(
     return accuracy
 
 
+def debug_l2_components(model):
+    """Debug function to check L2 components"""
+    total = 0.0
+    print("=== L2 Components Debug ===")
+
+    # Check conv1
+    if hasattr(model, "conv1"):
+        k = model.conv1.conv.kernel
+        l2_val = jnp.sum(jnp.square(k)) * model.conv1.l2reg
+        total += l2_val
+        print(f"conv1: {float(l2_val):.6f}")
+
+    # Check stages
+    stage_total = 0.0
+    for si, stage in enumerate(model.stages):
+        for bi, block in enumerate(stage):
+            # conv1
+            k1 = block.conv1.conv.kernel
+            l2_1 = jnp.sum(jnp.square(k1)) * block.conv1.l2reg
+            stage_total += l2_1
+
+            # conv2
+            k2 = block.conv2.conv.kernel
+            l2_2 = jnp.sum(jnp.square(k2)) * block.conv2.l2reg
+            stage_total += l2_2
+
+            # shortcut
+            if block.shortcut_conv is not None:
+                k3 = block.shortcut_conv.conv.kernel
+                l2_3 = jnp.sum(jnp.square(k3)) * block.shortcut_conv.l2reg
+                stage_total += l2_3
+
+    total += stage_total
+    print(f"stages: {float(stage_total):.6f}")
+    print(f"TOTAL L2: {float(total):.6f}")
+    return total
+
+
 def train(
     model: Classifier,
     optimizer: nnx.Optimizer,
@@ -97,6 +135,9 @@ def train(
         init_value=settings.learning_rate,
         decay_steps=settings.num_iters,
     )
+
+    initial_l2 = debug_l2_components(model)
+    log.info("Initial L2 loss", l2_loss=float(initial_l2))
 
     # Track best validation accuracy for early stopping insight
     best_val_accuracy = 0.0

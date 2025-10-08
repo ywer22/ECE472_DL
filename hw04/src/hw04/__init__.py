@@ -59,7 +59,8 @@ def main() -> None:
 
     schedule = optax.cosine_decay_schedule(
         init_value=settings.training.learning_rate,
-        decay_steps=settings.training.num_iters,
+        decay_steps=settings.training.num_iters * 10,  # decay was too fast for trainng
+        alpha=0.1,
     )
 
     # Initialize optimizers

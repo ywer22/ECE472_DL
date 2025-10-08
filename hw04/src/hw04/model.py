@@ -37,7 +37,7 @@ class Conv2d(nnx.Module):
         return self.conv(x)
 
     def l2_loss(self):
-        return self.l2reg * jnp.mean(jnp.square(self.conv.kernel))
+        return self.l2reg * jnp.sum(jnp.square(self.conv.kernel))
 
 
 class Data_Augmentation(nnx.Module):
