@@ -70,28 +70,34 @@ class Data_Augmentation(nnx.Module):
         key: jax.Array,
         scale_range: tuple[float, float] = (1.1, 1.3),
     ) -> jax.Array:
-        """Upscaling image on training set."""
+        """Upscaling image using dm_pix zoom function."""
         B, H, W, C = img.shape
-        scale = jax.random.uniform(
+
+        # Generate random scales for each image in batch
+        scales = jax.random.uniform(
             key, (B,), minval=scale_range[0], maxval=scale_range[1]
         )
 
-        def upsample_and_crop_single(img, scale, crop_key):
-            new_H = int(H * scale)
-            new_W = int(W * scale)
+        def zoom_and_crop_single(image, scale, crop_key):
+            # Calculate new dimensions
+            new_H = jnp.round(H * scale).astype(jnp.int32)
+            new_W = jnp.round(W * scale).astype(jnp.int32)
 
-            # Upscale image
-            upscale_img = jax.image.resize(img, (new_H, new_W, C), method="bilinear")
+            # Use dm_pix zoom for resizing
+            zoomed = pix.zoom(
+                image, (new_H / H, new_W / W, 1.0), interpolation="linear"
+            )
 
             # Random crop back to original size
             start_h = jax.random.randint(crop_key, (), 0, new_H - H + 1)
             start_w = jax.random.randint(crop_key, (), 0, new_W - W + 1)
-            cropped = upscale_img[start_h : start_h + H, start_w : start_w + W, :]
+
+            cropped = zoomed[start_h : start_h + H, start_w : start_w + W, :]
             return cropped
 
         # Split key for each image's crop
         crop_keys = jax.random.split(key, B)
-        return jax.vmap(upsample_and_crop_single)(img, scale, crop_keys)
+        return jax.vmap(zoom_and_crop_single)(img, scales, crop_keys)
 
     def img_rotation(
         self, img: jax.Array, key: jax.Array, rotation_angle: float = 3.0
